@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "13351842383",
+    "project_id": "createmessage2024",
+    "storage_bucket": "createmessage2024.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:13351842383:android:ce8db1103fd307310e703a",
+        "android_client_info": {
+          "package_name": "com.example.myapplication"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAFp_NVOzD5opdIGsMP-E-qPmMknb-_aUA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
