@@ -19,6 +19,7 @@ class EventManagementActivity : AppCompatActivity() {
     private lateinit var edtDate: EditText
     private lateinit var edtLocation: EditText
     private lateinit var edtImage: EditText
+    private lateinit var edtContent: EditText  // THÊM MỚI
     private lateinit var btnUpdate: Button
     private lateinit var recyclerView: RecyclerView
 
@@ -94,11 +95,13 @@ class EventManagementActivity : AppCompatActivity() {
         edtDate = createStyledEditText("📅 Nhập ngày tổ chức (VD: 01/01/2024)")
         edtLocation = createStyledEditText("📍 Nhập địa điểm")
         edtImage = createStyledEditText("🖼️ Nhập link hình ảnh")
+        edtContent = createStyledEditText("📝 Nhập nội dung chi tiết", isMultiline = true)  // THÊM MỚI
 
         formContainer.addView(edtTitle)
         formContainer.addView(edtDate)
         formContainer.addView(edtLocation)
         formContainer.addView(edtImage)
+        formContainer.addView(edtContent)  // THÊM MỚI
 
         /* ================= BUTTON ================= */
         btnUpdate = Button(this).apply {
@@ -167,13 +170,22 @@ class EventManagementActivity : AppCompatActivity() {
     }
 
     /* ================= UI HELPER ================= */
-    private fun createStyledEditText(hint: String): EditText {
+    private fun createStyledEditText(hint: String, isMultiline: Boolean = false): EditText {
         return EditText(this).apply {
             this.hint = hint
             setHintTextColor(Color.parseColor("#666666"))
             setTextColor(Color.parseColor("#CCCCCC"))
             setPadding(48, 36, 48, 36)
             setTextSize(TypedValue.COMPLEX_UNIT_SP, 15f)
+
+            if (isMultiline) {
+                minLines = 4
+                maxLines = 8
+                gravity = Gravity.START or Gravity.TOP
+                inputType = android.text.InputType.TYPE_CLASS_TEXT or
+                        android.text.InputType.TYPE_TEXT_FLAG_MULTI_LINE
+            }
+
             layoutParams = LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT
@@ -205,6 +217,7 @@ class EventManagementActivity : AppCompatActivity() {
         val date = edtDate.text.toString()
         val location = edtLocation.text.toString()
         val image = edtImage.text.toString()
+        val content = edtContent.text.toString()  // THÊM MỚI
 
         if (title.isEmpty() || date.isEmpty() || location.isEmpty()) {
             toast("Vui lòng nhập đầy đủ thông tin!")
@@ -215,7 +228,8 @@ class EventManagementActivity : AppCompatActivity() {
             "title" to title,
             "days" to date,
             "pot" to location,
-            "image" to image
+            "image" to image,
+            "content" to content  // THÊM MỚI
         )
 
         database.collection("Event")
@@ -238,6 +252,7 @@ class EventManagementActivity : AppCompatActivity() {
         edtDate.setText(event.date)
         edtLocation.setText(event.location)
         edtImage.setText(event.imageUrl)
+        edtContent.setText(event.content)  // THÊM MỚI
 
         btnUpdate.text = "✨ CẬP NHẬT SỰ KIỆN"
 
@@ -254,6 +269,7 @@ class EventManagementActivity : AppCompatActivity() {
         val date = edtDate.text.toString()
         val location = edtLocation.text.toString()
         val image = edtImage.text.toString()
+        val content = edtContent.text.toString()  // THÊM MỚI
 
         database.collection("Event")
             .whereEqualTo("title", event.title)
@@ -265,7 +281,8 @@ class EventManagementActivity : AppCompatActivity() {
                             "title" to title,
                             "days" to date,
                             "pot" to location,
-                            "image" to image
+                            "image" to image,
+                            "content" to content  // THÊM MỚI
                         )
                     )
                 }
@@ -298,10 +315,11 @@ class EventManagementActivity : AppCompatActivity() {
                 value?.forEach {
                     eventList.add(
                         Event(
-                            it.getString("title") ?: "",
-                            it.getString("days") ?: "",
-                            it.getString("image") ?: "",
-                            it.getString("pot") ?: ""
+                            title = it.getString("title") ?: "",
+                            date = it.getString("days") ?: "",
+                            imageUrl = it.getString("image") ?: "",
+                            location = it.getString("pot") ?: "",
+                            content = it.getString("content") ?: ""  // THÊM MỚI
                         )
                     )
                 }
@@ -316,6 +334,7 @@ class EventManagementActivity : AppCompatActivity() {
         edtDate.text.clear()
         edtLocation.text.clear()
         edtImage.text.clear()
+        edtContent.text.clear()  // THÊM MỚI
     }
 
     private fun resetEditMode() {

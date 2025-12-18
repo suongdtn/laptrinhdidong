@@ -85,7 +85,7 @@ class MovieAdapter(
             )
         }
 
-        // Border gradient đỏ - Giống banner HomeActivity
+
         val borderView = View(parent.context).apply {
             layoutParams = FrameLayout.LayoutParams(
                 FrameLayout.LayoutParams.MATCH_PARENT,
@@ -146,7 +146,7 @@ class MovieAdapter(
         }
         posterContainer.addView(moviePoster)
 
-        // Movie Title - Đồng bộ với HomeActivity
+
         val movieTitle = TextView(parent.context).apply {
             layoutParams = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.WRAP_CONTENT,

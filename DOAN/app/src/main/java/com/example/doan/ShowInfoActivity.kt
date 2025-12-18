@@ -18,6 +18,8 @@ class ShowInfoActivity : AppCompatActivity() {
     private lateinit var potTextView: TextView
     private lateinit var headerTitle: TextView
     private lateinit var eventImageView: ImageView
+    private lateinit var contentTextView: TextView
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -82,11 +84,13 @@ class ShowInfoActivity : AppCompatActivity() {
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.MATCH_PARENT
             )
-        }// Content Layout
+        }
+
+        // Content Layout
         val contentLayout = LinearLayout(this).apply {
             layoutParams = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.MATCH_PARENT
+                LinearLayout.LayoutParams.WRAP_CONTENT
             )
             orientation = LinearLayout.VERTICAL
             setPadding(dpToPx(16), dpToPx(16), dpToPx(16), dpToPx(16))
@@ -109,7 +113,7 @@ class ShowInfoActivity : AppCompatActivity() {
         titleTextView = TextView(this).apply {
             id = View.generateViewId()
             layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.WRAP_CONTENT,
+                LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT
             ).apply {
                 bottomMargin = dpToPx(8)
@@ -123,12 +127,12 @@ class ShowInfoActivity : AppCompatActivity() {
         daysTextView = TextView(this).apply {
             id = View.generateViewId()
             layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.WRAP_CONTENT,
+                LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT
             ).apply {
                 bottomMargin = dpToPx(8)
             }
-            textSize = 18f
+            textSize = 16f
             setTextColor(Color.parseColor("#CCCCCC"))
         }
 
@@ -136,35 +140,60 @@ class ShowInfoActivity : AppCompatActivity() {
         potTextView = TextView(this).apply {
             id = View.generateViewId()
             layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.WRAP_CONTENT,
+                LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT
             ).apply {
                 bottomMargin = dpToPx(16)
             }
-            textSize = 18f
+            textSize = 16f
             setTextColor(Color.parseColor("#CCCCCC"))
         }
 
-        // Additional Info TextView
-        val additionalInfo = TextView(this).apply {
+        // Divider
+        val divider = View(this).apply {
             layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.WRAP_CONTENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                dpToPx(1)
             ).apply {
+                topMargin = dpToPx(8)
                 bottomMargin = dpToPx(16)
             }
-            text = "Chưa có thông tin"
-            textSize = 16f
+            setBackgroundColor(Color.parseColor("#333333"))
+        }
+
+        // Content Title
+        val contentTitle = TextView(this).apply {
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply {
+                bottomMargin = dpToPx(12)
+            }
+            text = "Nội dung chi tiết"
+            textSize = 18f
             setTypeface(null, android.graphics.Typeface.BOLD)
-            setTextColor(Color.parseColor("#AAAAAA"))
-            gravity = Gravity.CENTER
+            setTextColor(Color.parseColor("#E50914"))
+        }
+
+        // Content TextView
+        contentTextView = TextView(this).apply {
+            id = View.generateViewId()
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            )
+            textSize = 15f
+            setTextColor(Color.parseColor("#DDDDDD"))
+            setLineSpacing(dpToPx(4).toFloat(), 1.0f)
         }
 
         contentLayout.addView(eventImageView)
         contentLayout.addView(titleTextView)
         contentLayout.addView(daysTextView)
         contentLayout.addView(potTextView)
-        contentLayout.addView(additionalInfo)
+        contentLayout.addView(divider)
+        contentLayout.addView(contentTitle)
+        contentLayout.addView(contentTextView)
 
         scrollView.addView(contentLayout)
         mainLayout.addView(headerLayout)
@@ -177,17 +206,20 @@ class ShowInfoActivity : AppCompatActivity() {
         val eventDays = intent.getStringExtra("eventDays") ?: "Không có thông tin"
         val eventImageUrl = intent.getStringExtra("eventImageUrl") ?: ""
         val eventPot = intent.getStringExtra("eventPot") ?: "Không có thông tin"
+        val eventContent = intent.getStringExtra("eventContent") ?: "Không có nội dung chi tiết"
 
         // Hiển thị thông tin lên UI
         titleTextView.text = eventTitle
-        daysTextView.text = eventDays
+        daysTextView.text = "📅 $eventDays"
         headerTitle.text = eventTitle
-        potTextView.text = eventPot
+        potTextView.text = "📍 $eventPot"
+        contentTextView.text = eventContent
 
         // Tải hình ảnh bằng Glide
         Glide.with(this)
             .load(eventImageUrl)
             .placeholder(R.drawable.ic_launcher_background)
+            .error(R.drawable.ic_launcher_background)
             .into(eventImageView)
     }
 

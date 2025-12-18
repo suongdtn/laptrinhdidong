@@ -2,19 +2,19 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
 
     <item
+        android:id="@+id/nav_home"
+        android:icon="@drawable/baseline_duo_24"
+        android:title="Trang chủ" />
+
+    <item
         android:id="@+id/nav_phim"
         android:icon="@drawable/baseline_add_to_queue_24"
         android:title="Phim" />
 
     <item
-        android:id="@+id/nav_mua_ve"
+        android:id="@+id/nav_su_kien"
         android:icon="@drawable/baseline_cruelty_free_24"
         android:title="Sự kiện" />
-
-    <item
-        android:id="@+id/nav_rap"
-        android:icon="@drawable/baseline_duo_24"
-        android:title="Rạp" />
 
     <item
         android:id="@+id/nav_khuyen_mai"

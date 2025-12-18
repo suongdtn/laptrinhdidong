@@ -16,7 +16,8 @@ data class Promotion(
     val date: String = "",
     val imageUrl: String = "",
     val location: String = "",
-    val id: String = ""
+    val id: String = "",
+    val content: String = ""
 )
 
 class PromotionAdapter(
@@ -52,7 +53,7 @@ class PromotionAdapter(
                 topMargin = dpToPx(16, context)
             }
             orientation = LinearLayout.HORIZONTAL
-            setPadding(dpToPx(8, context), dpToPx(8, context), dpToPx(8, context), dpToPx(8, context))
+            setPadding(dpToPx(12, context), dpToPx(12, context), dpToPx(12, context), dpToPx(12, context))
             setBackgroundColor(Color.parseColor("#1A1A1A"))
         }
 
@@ -71,8 +72,9 @@ class PromotionAdapter(
         // Text container (vertical)
         val textLayout = LinearLayout(context).apply {
             layoutParams = LinearLayout.LayoutParams(
+                0,
                 LinearLayout.LayoutParams.WRAP_CONTENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
+                1f
             )
             orientation = LinearLayout.VERTICAL
             gravity = Gravity.CENTER_VERTICAL
@@ -80,35 +82,39 @@ class PromotionAdapter(
 
         // Title
         val promotionTitle = TextView(context).apply {
-            layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT,
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT
             )
             textSize = 18f
             setTypeface(null, android.graphics.Typeface.BOLD)
             setTextColor(Color.WHITE)
-            text = "Khuyến Mãi:"
+            maxLines = 2
+            ellipsize = android.text.TextUtils.TruncateAt.END
         }
 
         // Date
         val promotionDate = TextView(context).apply {
             layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.WRAP_CONTENT,
+                LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT
-            )
+            ).apply {
+                topMargin = dpToPx(4, context)
+            }
             textSize = 14f
             setTextColor(Color.parseColor("#AAAAAA"))
-            text = "Ngày kết thúc:"
         }
 
         // Location
         val promotionLocation = TextView(context).apply {
             layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.WRAP_CONTENT,
+                LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT
-            )
+            ).apply {
+                topMargin = dpToPx(4, context)
+            }
             textSize = 14f
             setTextColor(Color.parseColor("#AAAAAA"))
-            text = "Địa điểm:"
         }
 
         textLayout.addView(promotionTitle)
@@ -125,12 +131,13 @@ class PromotionAdapter(
         val promo = promotions[position]
 
         holder.promotionTitle.text = promo.title
-        holder.promotionDate.text = promo.date
-        holder.promotionlocation.text = promo.location
+        holder.promotionDate.text = "📅 ${promo.date}"
+        holder.promotionlocation.text = "📍 ${promo.location}"
 
         Glide.with(holder.itemView.context)
             .load(promo.imageUrl)
             .placeholder(R.drawable.ic_launcher_background)
+            .error(R.drawable.ic_launcher_background)
             .into(holder.promotionImage)
 
         holder.itemView.setOnClickListener {

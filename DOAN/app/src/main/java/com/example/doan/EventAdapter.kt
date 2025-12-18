@@ -21,7 +21,8 @@ data class Event(
     val title: String = "",
     val date: String = "",
     val imageUrl: String = "",
-    val location: String = ""
+    val location: String = "",
+    val content: String=""
 )
 
 class EventAdapter(

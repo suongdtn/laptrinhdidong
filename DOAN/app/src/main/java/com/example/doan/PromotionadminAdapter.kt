@@ -1,14 +1,14 @@
 package com.example.doan
 
-import android.annotation.SuppressLint
 import android.graphics.Color
+import android.graphics.Typeface
+import android.graphics.drawable.GradientDrawable
 import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup
-import android.widget.Button
-import android.widget.LinearLayout
-import android.widget.TextView
+import android.widget.*
 import androidx.recyclerview.widget.RecyclerView
+import com.bumptech.glide.Glide
 
 class PromotionadminAdapter(
     private var promotionList: MutableList<Promotion>,
@@ -16,144 +16,241 @@ class PromotionadminAdapter(
     private val onDelete: (Promotion) -> Unit
 ) : RecyclerView.Adapter<PromotionadminAdapter.PromotionViewHolder>() {
 
-    class PromotionViewHolder(view: View) : RecyclerView.ViewHolder(view) {
-        val txtTitle: TextView
-        val txtDate: TextView
-        val txtLocation: TextView
+    inner class PromotionViewHolder(val root: LinearLayout) : RecyclerView.ViewHolder(root) {
+        val cardContainer: LinearLayout
+        val img: ImageView
+        val contentLayout: LinearLayout
+        val tvTitle: TextView
+        val tvDate: TextView
+        val tvLocation: TextView
         val btnEdit: Button
         val btnDelete: Button
 
         init {
-            val mainLayout = view as LinearLayout
-            txtTitle = mainLayout.getChildAt(0) as TextView
-            txtDate = mainLayout.getChildAt(1) as TextView
-            txtLocation = mainLayout.getChildAt(2) as TextView
-            val buttonLayout = mainLayout.getChildAt(3) as LinearLayout
-            btnEdit = buttonLayout.getChildAt(0) as Button
-            btnDelete = buttonLayout.getChildAt(1) as Button
+            root.orientation = LinearLayout.VERTICAL
+            root.setPadding(0, 0, 0, 20)
+            root.setBackgroundColor(Color.TRANSPARENT)
+
+            // Card container với shadow effect
+            cardContainer = LinearLayout(root.context).apply {
+                orientation = LinearLayout.VERTICAL
+                background = createCardBackground()
+                elevation = 6f
+            }
+
+            // Image container
+            val imageContainer = FrameLayout(root.context).apply {
+                layoutParams = LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    480
+                )
+            }
+
+            img = ImageView(root.context).apply {
+                layoutParams = FrameLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.MATCH_PARENT
+                )
+                scaleType = ImageView.ScaleType.CENTER_CROP
+            }
+
+            // Gradient overlay
+            val overlay = View(root.context).apply {
+                layoutParams = FrameLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.MATCH_PARENT
+                )
+                background = GradientDrawable(
+                    GradientDrawable.Orientation.BOTTOM_TOP,
+                    intArrayOf(Color.parseColor("#AA000000"), Color.TRANSPARENT)
+                )
+            }
+
+            imageContainer.addView(img)
+            imageContainer.addView(overlay)
+
+            // Content layout
+            contentLayout = LinearLayout(root.context).apply {
+                orientation = LinearLayout.VERTICAL
+                setPadding(32, 28, 32, 28)
+                setBackgroundColor(Color.parseColor("#1E1E1E"))
+            }
+
+            tvTitle = TextView(root.context).apply {
+                textSize = 19f
+                setTextColor(Color.WHITE)
+                setTypeface(null, Typeface.BOLD)
+                setPadding(0, 0, 0, 16)
+                maxLines = 2
+                letterSpacing = 0.02f
+            }
+
+            // Date container
+            val dateContainer = LinearLayout(root.context).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity = Gravity.CENTER_VERTICAL
+                setPadding(0, 0, 0, 12)
+            }
+
+            val dateIcon = TextView(root.context).apply {
+                text = "📅"
+                textSize = 16f
+                setPadding(0, 0, 12, 0)
+            }
+
+            tvDate = TextView(root.context).apply {
+                textSize = 14f
+                setTextColor(Color.parseColor("#B0B0B0"))
+            }
+
+            dateContainer.addView(dateIcon)
+            dateContainer.addView(tvDate)
+
+            // Location container
+            val locationContainer = LinearLayout(root.context).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity = Gravity.CENTER_VERTICAL
+                setPadding(0, 0, 0, 24)
+            }
+
+            val locationIcon = TextView(root.context).apply {
+                text = "📍"
+                textSize = 16f
+                setPadding(0, 0, 12, 0)
+            }
+
+            tvLocation = TextView(root.context).apply {
+                textSize = 14f
+                setTextColor(Color.parseColor("#B0B0B0"))
+            }
+
+            locationContainer.addView(locationIcon)
+            locationContainer.addView(tvLocation)
+
+            // Divider
+            val divider = View(root.context).apply {
+                layoutParams = LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    2
+                ).apply {
+                    topMargin = 8
+                    bottomMargin = 20
+                }
+                setBackgroundColor(Color.parseColor("#2A2A2A"))
+            }
+
+            // Button layout
+            val btnLayout = LinearLayout(root.context).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity = Gravity.END
+            }
+
+            btnEdit = Button(root.context).apply {
+                text = "Sửa"
+                setTextColor(Color.WHITE)
+                textSize = 14f
+                setTypeface(null, Typeface.BOLD)
+                setPadding(56, 28, 56, 28)
+                layoutParams = LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.WRAP_CONTENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT
+                ).apply {
+                    marginEnd = 16
+                }
+                background = createEditButtonBackground()
+                elevation = 3f
+            }
+
+            btnDelete = Button(root.context).apply {
+                text = "Xóa"
+                setTextColor(Color.WHITE)
+                textSize = 14f
+                setTypeface(null, Typeface.BOLD)
+                setPadding(56, 28, 56, 28)
+                layoutParams = LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.WRAP_CONTENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT
+                )
+                background = createDeleteButtonBackground()
+                elevation = 3f
+            }
+
+            btnLayout.addView(btnEdit)
+            btnLayout.addView(btnDelete)
+
+            contentLayout.addView(tvTitle)
+            contentLayout.addView(dateContainer)
+            contentLayout.addView(locationContainer)
+            contentLayout.addView(divider)
+            contentLayout.addView(btnLayout)
+
+            cardContainer.addView(imageContainer)
+            cardContainer.addView(contentLayout)
+
+            root.addView(cardContainer)
+        }
+
+        private fun createCardBackground(): GradientDrawable {
+            return GradientDrawable().apply {
+                setColor(Color.parseColor("#1E1E1E"))
+                cornerRadius = 24f
+            }
+        }
+
+        private fun createEditButtonBackground(): GradientDrawable {
+            return GradientDrawable().apply {
+                colors = intArrayOf(Color.parseColor("#1E88E5"), Color.parseColor("#1976D2"))
+                cornerRadius = 16f
+                gradientType = GradientDrawable.LINEAR_GRADIENT
+                orientation = GradientDrawable.Orientation.LEFT_RIGHT
+            }
+        }
+
+        private fun createDeleteButtonBackground(): GradientDrawable {
+            return GradientDrawable().apply {
+                colors = intArrayOf(Color.parseColor("#D32F2F"), Color.parseColor("#C62828"))
+                cornerRadius = 16f
+                gradientType = GradientDrawable.LINEAR_GRADIENT
+                orientation = GradientDrawable.Orientation.LEFT_RIGHT
+            }
         }
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): PromotionViewHolder {
-        val context = parent.context
-
-        // Main vertical layout
-        val mainLayout = LinearLayout(context).apply {
-            layoutParams = RecyclerView.LayoutParams(
-                RecyclerView.LayoutParams.MATCH_PARENT,
-                RecyclerView.LayoutParams.WRAP_CONTENT
-            ).apply {
-                setMargins(dpToPx(8, context), dpToPx(8, context), dpToPx(8, context), dpToPx(8, context))
-            }
-            orientation = LinearLayout.VERTICAL
-            setBackgroundColor(Color.parseColor("#1A1A1A"))
-            setPadding(dpToPx(12, context), dpToPx(12, context), dpToPx(12, context), dpToPx(12, context))
-            elevation = dpToPx(4, context).toFloat()
-        }
-
-        // Title TextView
-        val txtTitle = TextView(context).apply {
-            layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
-            ).apply {
-                bottomMargin = dpToPx(4, context)
-            }
-            text = "Tiêu đề khuyến mãi"
-            textSize = 18f
-            setTypeface(null, android.graphics.Typeface.BOLD)
-            setTextColor(Color.WHITE)
-        }
-
-        // Date TextView
-        val txtDate = TextView(context).apply {
-            layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
-            )
-            text = "Thời gian khuyến mãi"
-            textSize = 14f
-            setTextColor(Color.parseColor("#AAAAAA"))
-        }
-
-        val txtLocation = TextView(context).apply {
-            layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
-            ).apply {
-                bottomMargin = dpToPx(8, context)
-            }
-            text = "Địa điểm"
-            textSize = 14f
-            setTextColor(Color.parseColor("#AAAAAA"))
-        }
-
-        // Button container (horizontal)
-        val buttonLayout = LinearLayout(context).apply {
-            layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
-            )
-            orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.END
-        }
-
-        // Edit Button
-        val btnEdit = Button(context).apply {
-            layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.WRAP_CONTENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
-            ).apply {
-                marginEnd = dpToPx(8, context)
-            }
-            text = "Sửa"
-            setBackgroundColor(Color.parseColor("#0D47A1")) // Blue
-            setTextColor(Color.WHITE)
-        }
-
-        // Delete Button
-        val btnDelete = Button(context).apply {
-            layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.WRAP_CONTENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
-            )
-            text = "Xóa"
-            setBackgroundColor(Color.parseColor("#C62828")) // Red
-            setTextColor(Color.WHITE)
-        }
-
-        buttonLayout.addView(btnEdit)
-        buttonLayout.addView(btnDelete)
-
-        mainLayout.addView(txtTitle)
-        mainLayout.addView(txtDate)
-        mainLayout.addView(txtLocation)
-        mainLayout.addView(buttonLayout)
-
-        return PromotionViewHolder(mainLayout)
+        val layout = LinearLayout(parent.context)
+        layout.layoutParams = ViewGroup.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT,
+            ViewGroup.LayoutParams.WRAP_CONTENT
+        )
+        return PromotionViewHolder(layout)
     }
 
-    @SuppressLint("SetTextI18n")
+    override fun getItemCount() = promotionList.size
+
     override fun onBindViewHolder(holder: PromotionViewHolder, position: Int) {
-        val promotion = promotionList[position]
+        val promo = promotionList[position]
 
-        // GIỮ NGUYÊN CODE CŨ
-        holder.txtTitle.text = promotion.title
-        holder.txtDate.text = "Thời gian khuyến mãi: ${promotion.date}"
-        holder.txtLocation.text = "Địa điểm: ${promotion.location}"
+        holder.tvTitle.text = promo.title
+        holder.tvDate.text = promo.date
+        holder.tvLocation.text = promo.location
 
-        holder.btnEdit.setOnClickListener { onEdit(promotion) }
-        holder.btnDelete.setOnClickListener { onDelete(promotion) }
+        if (promo.imageUrl.isNotEmpty()) {
+            Glide.with(holder.img.context)
+                .load(promo.imageUrl)
+                .centerCrop()
+                .placeholder(R.drawable.ic_launcher_background)
+                .error(R.drawable.ic_launcher_background)
+                .into(holder.img)
+        } else {
+            holder.img.setBackgroundColor(Color.parseColor("#2A2A2A"))
+        }
+
+        holder.btnEdit.setOnClickListener { onEdit(promo) }
+        holder.btnDelete.setOnClickListener { onDelete(promo) }
     }
-
-    override fun getItemCount(): Int = promotionList.size
 
     fun updateList(newList: MutableList<Promotion>) {
         promotionList = newList
         notifyDataSetChanged()
-    }
-
-    private fun dpToPx(dp: Int, context: android.content.Context): Int {
-        return (dp * context.resources.displayMetrics.density).toInt()
     }
 }

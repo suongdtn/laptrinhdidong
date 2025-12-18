@@ -8,17 +8,19 @@ import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.text.Editable
+import android.text.TextWatcher
 import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup
 import android.widget.*
-import androidx.appcompat.app.AppCompatActivity
 import androidx.cardview.widget.CardView
 import androidx.core.view.setPadding
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import androidx.viewpager2.widget.ViewPager2
 import com.bumptech.glide.Glide
+import com.google.android.material.bottomnavigation.BottomNavigationView
 import com.google.firebase.firestore.FirebaseFirestore
 
 object cinemas {
@@ -27,7 +29,8 @@ object cinemas {
     var province: String = ""
 }
 
-class FilmActivity : AppCompatActivity() {
+// ⭐ THAY ĐỔI: Kế thừa từ BaseActivity thay vì AppCompatActivity
+class FilmActivity : BaseActivity() {
 
     private lateinit var recyclerView: RecyclerView
     private lateinit var filmAdapter: FilmAdapter
@@ -36,7 +39,9 @@ class FilmActivity : AppCompatActivity() {
     private lateinit var filmb: Button
     private lateinit var underline1: View
     private lateinit var underline2: View
+    private lateinit var searchEditText: EditText
     private val filmList = mutableListOf<Film>()
+    private val filteredList = mutableListOf<Film>()
     private lateinit var posterAdapter: PosterAdapter
     private val handler = Handler(Looper.getMainLooper())
     private var currentPage = 0
@@ -44,9 +49,20 @@ class FilmActivity : AppCompatActivity() {
 
     private val firestore = FirebaseFirestore.getInstance()
 
+    // ⭐ THÊM: Trả về ID của nav_phim
+    override fun getNavigationMenuItemId(): Int = R.id.nav_phim
+
     @SuppressLint("SetTextI18n")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        // ⭐ LẤY EMAIL
+        val email = intent.getStringExtra("userEmail")
+        userEmail = email
+        cinemas.iEmail = email.toString()
+        cinemas.province = intent.getStringExtra("province") ?: "Không xác định"
+        val cinema = intent.getStringExtra("cinema") ?: "Không xác định"
+        cinemas.userName = cinema
 
         // ROOT LAYOUT
         val root = RelativeLayout(this).apply {
@@ -57,7 +73,7 @@ class FilmActivity : AppCompatActivity() {
             setBackgroundColor(Color.parseColor("#0D0D0D"))
         }
 
-        // 🔴 HEADER - TĂNG TO HƠN NỮA
+        // 🔴 HEADER
         val header = RelativeLayout(this).apply {
             id = View.generateViewId()
             background = GradientDrawable(
@@ -67,10 +83,10 @@ class FilmActivity : AppCompatActivity() {
                     Color.parseColor("#C41E3A")
                 )
             )
-            setPadding(dp(16), dp(14), dp(16), dp(14)) // TĂNG: từ 12,10 lên 16,14
+            setPadding(dp(16), dp(14), dp(16), dp(14))
             layoutParams = RelativeLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
-                dp(68) // TĂNG: từ 56 lên 68
+                dp(68)
             )
             elevation = dp(4).toFloat()
         }
@@ -80,17 +96,17 @@ class FilmActivity : AppCompatActivity() {
             setImageResource(android.R.drawable.ic_media_previous)
             setColorFilter(Color.WHITE)
             layoutParams = RelativeLayout.LayoutParams(
-                dp(44), dp(44) // TĂNG: từ 36 lên 44
+                dp(44), dp(44)
             ).apply {
                 addRule(RelativeLayout.ALIGN_PARENT_START)
                 addRule(RelativeLayout.CENTER_VERTICAL)
             }
-            setPadding(dp(6)) // TĂNG: từ 4 lên 6
+            setPadding(dp(6))
             setOnClickListener { finish() }
         }
         header.addView(btnBack)
 
-        // ===== TWO TABS - TĂNG KÍCH THƯỚC =====
+        // ===== TWO TABS =====
         val tabLayout = LinearLayout(this).apply {
             id = View.generateViewId()
             orientation = LinearLayout.HORIZONTAL
@@ -103,52 +119,50 @@ class FilmActivity : AppCompatActivity() {
             }
         }
 
-        // TAB 1
         val tab1 = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             gravity = Gravity.CENTER
-            setPadding(dp(16), dp(6), dp(16), dp(6)) // TĂNG: từ 12,4 lên 16,6
+            setPadding(dp(16), dp(6), dp(16), dp(6))
         }
         filma = Button(this).apply {
             text = "ĐANG CHIẾU"
-            textSize = 15f // TĂNG: từ 13f lên 15f
+            textSize = 15f
             setBackgroundColor(Color.TRANSPARENT)
             setTextColor(Color.WHITE)
             typeface = Typeface.DEFAULT_BOLD
             letterSpacing = 0.05f
             minHeight = 0
             minimumHeight = 0
-            setPadding(0, 0, 0, dp(6)) // TĂNG: từ 4 lên 6
+            setPadding(0, 0, 0, dp(6))
         }
         underline1 = View(this).apply {
             setBackgroundColor(Color.WHITE)
-            layoutParams = LinearLayout.LayoutParams(dp(110), dp(4)) // TĂNG: từ 100,3 lên 110,4
+            layoutParams = LinearLayout.LayoutParams(dp(110), dp(4))
         }
         tab1.addView(filma)
         tab1.addView(underline1)
 
-        // TAB 2
         val tab2 = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             gravity = Gravity.CENTER
-            setPadding(dp(16), dp(6), dp(16), dp(6)) // TĂNG: từ 12,4 lên 16,6
+            setPadding(dp(16), dp(6), dp(16), dp(6))
         }
 
         filmb = Button(this).apply {
             text = "SẮP CHIẾU"
-            textSize = 15f // TĂNG: từ 13f lên 15f
+            textSize = 15f
             setBackgroundColor(Color.TRANSPARENT)
             setTextColor(Color.WHITE)
             typeface = Typeface.DEFAULT_BOLD
             letterSpacing = 0.05f
             minHeight = 0
             minimumHeight = 0
-            setPadding(0, 0, 0, dp(6)) // TĂNG: từ 4 lên 6
+            setPadding(0, 0, 0, dp(6))
         }
         underline2 = View(this).apply {
             setBackgroundColor(Color.WHITE)
             visibility = View.INVISIBLE
-            layoutParams = LinearLayout.LayoutParams(dp(110), dp(4)) // TĂNG: từ 100,3 lên 110,4
+            layoutParams = LinearLayout.LayoutParams(dp(110), dp(4))
         }
         tab2.addView(filmb)
         tab2.addView(underline2)
@@ -186,6 +200,66 @@ class FilmActivity : AppCompatActivity() {
         bannerContainer.addView(viewPager)
         root.addView(bannerContainer)
 
+        // 🔴 SEARCH BAR
+        val searchContainer = LinearLayout(this).apply {
+            id = View.generateViewId()
+            layoutParams = RelativeLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT
+            ).apply {
+                addRule(RelativeLayout.BELOW, bannerContainer.id)
+                topMargin = dp(12)
+                leftMargin = dp(16)
+                rightMargin = dp(16)
+            }
+            orientation = LinearLayout.HORIZONTAL
+            setPadding(dp(16), dp(16), dp(16), dp(16))
+            setBackgroundColor(Color.parseColor("#0D0D0D"))
+            gravity = Gravity.CENTER_VERTICAL
+        }
+
+        val searchBox = LinearLayout(this).apply {
+            layoutParams = LinearLayout.LayoutParams(
+                0,
+                dp(48),
+                1f
+            )
+            orientation = LinearLayout.HORIZONTAL
+            background = createSearchBackground()
+            setPadding(dp(16), dp(8), dp(16), dp(8))
+            gravity = Gravity.CENTER_VERTICAL
+            elevation = dp(2).toFloat()
+        }
+
+        val searchIcon = TextView(this).apply {
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            )
+            text = "🔍"
+            textSize = 18f
+            setPadding(0, 0, dp(12), 0)
+        }
+
+        searchEditText = EditText(this).apply {
+            layoutParams = LinearLayout.LayoutParams(
+                0,
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                1f
+            )
+            hint = "Tìm kiếm phim..."
+            setHintTextColor(Color.parseColor("#666666"))
+            setTextColor(Color.WHITE)
+            textSize = 16f
+            background = null
+            setPadding(0, 0, 0, 0)
+        }
+
+        searchBox.addView(searchIcon)
+        searchBox.addView(searchEditText)
+        searchContainer.addView(searchBox)
+        root.addView(searchContainer)
+
         // 🔴 FILM LIST
         val listContainer = FrameLayout(this).apply {
             id = View.generateViewId()
@@ -194,8 +268,10 @@ class FilmActivity : AppCompatActivity() {
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.MATCH_PARENT
             ).apply {
-                addRule(RelativeLayout.BELOW, bannerContainer.id)
+                addRule(RelativeLayout.BELOW, searchContainer.id)
                 topMargin = dp(12)
+                // ⭐ THÊM: bottomMargin để tránh bị che bởi Bottom Navigation
+                bottomMargin = dp(80)
             }
         }
 
@@ -205,20 +281,32 @@ class FilmActivity : AppCompatActivity() {
                 FrameLayout.LayoutParams.MATCH_PARENT,
                 FrameLayout.LayoutParams.MATCH_PARENT
             )
+            // ⭐ THÊM: Padding bottom để item cuối không bị che
+            setPadding(0, 0, 0, dp(16))
+            clipToPadding = false
         }
         listContainer.addView(recyclerView)
         root.addView(listContainer)
 
+        // ⭐⭐⭐ THÊM BOTTOM NAVIGATION ⭐⭐⭐
+        bottomNavigation = BottomNavigationView(this).apply {
+            id = View.generateViewId()
+            layoutParams = RelativeLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                dp(80)
+            ).apply {
+                addRule(RelativeLayout.ALIGN_PARENT_BOTTOM)
+            }
+        }
+        root.addView(bottomNavigation)
+        // ⭐ Setup Bottom Navigation với email
+        setupBottomNavigation(bottomNavigation, email)
+
         setContentView(root)
 
         // ===== KEEP ORIGINAL LOGIC =====
-        filmAdapter = FilmAdapter(filmList)
+        filmAdapter = FilmAdapter(filteredList)
         recyclerView.adapter = filmAdapter
-
-        cinemas.iEmail = intent.getStringExtra("userEmail").toString()
-        cinemas.province = intent.getStringExtra("province") ?: "Không xác định"
-        val cinema = intent.getStringExtra("cinema") ?: "Không xác định"
-        cinemas.userName = cinema
 
         val posters = listOf(
             "https://st.download.com.vn/data/image/2024/01/25/mai-700.jpg",
@@ -244,7 +332,46 @@ class FilmActivity : AppCompatActivity() {
             updateTabUI(false)
         }
 
+        // Thêm TextWatcher cho search
+        searchEditText.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
+                filterFilms(s.toString())
+            }
+
+            override fun afterTextChanged(s: Editable?) {}
+        })
+
         updateTabUI(true)
+    }
+
+    private fun createSearchBackground(): GradientDrawable {
+        return GradientDrawable().apply {
+            setColor(Color.parseColor("#1E1E1E"))
+            cornerRadius = dp(24).toFloat()
+            setStroke(dp(1), Color.parseColor("#333333"))
+        }
+    }
+
+    private fun filterFilms(query: String) {
+        filteredList.clear()
+
+        if (query.isEmpty()) {
+            filteredList.addAll(filmList)
+        } else {
+            val lowerCaseQuery = query.lowercase()
+            filteredList.addAll(
+                filmList.filter { film ->
+                    film.title.lowercase().contains(lowerCaseQuery) ||
+                            film.genre.lowercase().contains(lowerCaseQuery) ||
+                            film.director.lowercase().contains(lowerCaseQuery) ||
+                            film.releaseDate.lowercase().contains(lowerCaseQuery)
+                }
+            )
+        }
+
+        filmAdapter.notifyDataSetChanged()
     }
 
     private fun updateTabUI(isFirst: Boolean) {
@@ -259,10 +386,6 @@ class FilmActivity : AppCompatActivity() {
             filma.setTypeface(null, Typeface.NORMAL)
             filmb.setTypeface(null, Typeface.BOLD)
         }
-    }
-
-    private fun dp(value: Int): Int {
-        return (value * resources.displayMetrics.density).toInt()
     }
 
     private fun startAutoScroll() {
@@ -313,6 +436,8 @@ class FilmActivity : AppCompatActivity() {
                         )
                     }
                     filmList.reverse()
+                    filteredList.clear()
+                    filteredList.addAll(filmList)
                     filmAdapter.notifyDataSetChanged()
                 }
             }
@@ -320,7 +445,7 @@ class FilmActivity : AppCompatActivity() {
 }
 
 
-// ===== DATA + ADAPTER =====
+// ===== DATA + ADAPTER (GIỮ NGUYÊN) =====
 
 data class Film(
     val title: String,
@@ -365,7 +490,6 @@ class FilmAdapter(private val films: List<Film>) :
             setPadding(dp(context, 16))
         }
 
-        // Poster - GIỮ KÍCH THƯỚC TO
         val posterContainer = FrameLayout(context).apply {
             background = GradientDrawable().apply {
                 setStroke(dp(context, 2), Color.parseColor("#E50914"))
@@ -434,6 +558,7 @@ class FilmAdapter(private val films: List<Film>) :
                 LinearLayout.LayoutParams.WRAP_CONTENT
             ).apply { bottomMargin = dp(context, 4) }
         }
+
         val t4 = TextView(context).apply {
             textSize = 13f
             setTextColor(Color.parseColor("#CCCCCC"))

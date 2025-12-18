@@ -1,10 +1,12 @@
 package com.example.doan
 
 import android.annotation.SuppressLint
+import android.graphics.Bitmap
 import android.graphics.Color
 import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
+import android.os.CountDownTimer
 import android.util.Log
 import android.util.TypedValue
 import android.view.Gravity
@@ -17,12 +19,16 @@ import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.DatabaseReference
 import com.google.firebase.database.FirebaseDatabase
-import com.google.firebase.database.ValueEventListener
 import com.google.firebase.firestore.CollectionReference
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.zxing.BarcodeFormat
+import com.google.zxing.WriterException
+import com.google.zxing.qrcode.QRCodeWriter
+import org.json.JSONObject
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
-
+import java.util.*
+import com.google.firebase.database.ValueEventListener
 class ConfirmActivity : AppCompatActivity() {
 
     private lateinit var databaseFS: CollectionReference
@@ -261,7 +267,7 @@ class ConfirmActivity : AppCompatActivity() {
                 ).apply {
                     marginStart = dp(12)
                 }
-                text = "Thanh toán tại quầy"
+                text = "Thanh toán qua ngân hàng"
                 textSize = 16f
                 setTextColor(COLOR_TEXT_PRIMARY)
             }
@@ -452,7 +458,7 @@ class ConfirmActivity : AppCompatActivity() {
             letterSpacing = 0.05f
             setOnClickListener {
                 Log.d("CinemaInfo", tenn)
-                showPaymentOptions()
+                showQRPaymentDialog()  // Thay đổi: Gọi hàm mới
             }
         }
         return btnConfirm
@@ -531,32 +537,55 @@ class ConfirmActivity : AppCompatActivity() {
         return "${String.format("%,d", amount).replace(',', '.')} đ"
     }
 
-    private fun showPaymentOptions() {
+    private fun showQRPaymentDialog() {
         val dialog = AlertDialog.Builder(this).create()
 
         val layout = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(dp(24), dp(24), dp(24), dp(24))
             background = createRoundedBackground(COLOR_CARD, dp(16))
+            gravity = Gravity.CENTER_HORIZONTAL
         }
 
-        val title1 = TextView(this).apply {
-            text = "XÁC NHẬN ĐẶT VÉ"
-            textSize = 20f
+        // Tiêu đề
+        val titleView = TextView(this).apply {
+            text = "QUÉT MÃ QR ĐỂ THANH TOÁN"
+            textSize = 18f
             setTypeface(null, Typeface.BOLD)
             gravity = Gravity.CENTER
             setTextColor(COLOR_TEXT_PRIMARY)
-            setPadding(0, 0, 0, dp(20))
+            setPadding(0, 0, 0, dp(16))
         }
 
-        val confirmMessage = TextView(this).apply {
-            text = "Bạn có chắc chắn muốn đặt vé với tổng số tiền ${formatCurrency(gia)}?"
+        // Mã QR
+        val qrImageView = ImageView(this).apply {
+            layoutParams = LinearLayout.LayoutParams(dp(200), dp(200))
+            scaleType = ImageView.ScaleType.CENTER_INSIDE
+            setPadding(0, 0, 0, dp(16))
+        }
+
+        // Tạo dữ liệu cho QR (JSON với email, tổng tiền, và ID giao dịch ngẫu nhiên)
+        val transactionId = generateTransactionId()
+        val qrData = JSONObject().apply {
+            put("email", iEmail)
+            put("amount", gia)
+            put("transactionId", transactionId)
+        }.toString()
+
+        // Tạo bitmap QR
+        val qrBitmap = generateQRCode(qrData, 200, 200)
+        qrImageView.setImageBitmap(qrBitmap)
+
+        // TextView đếm ngược
+        val countdownText = TextView(this).apply {
+            text = "Thời gian còn lại: 30 giây"
             textSize = 16f
             gravity = Gravity.CENTER
             setTextColor(COLOR_TEXT_SECONDARY)
-            setPadding(0, 0, 0, dp(24))
+            setPadding(0, 0, 0, dp(16))
         }
 
+        // Nút xác nhận
         val confirmBtn = Button(this).apply {
             layoutParams = LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
@@ -564,42 +593,69 @@ class ConfirmActivity : AppCompatActivity() {
             ).apply {
                 setMargins(0, 0, 0, dp(12))
             }
-            text = "XÁC NHẬN"
+            text = "XÁC NHẬN THANH TOÁN"
             textSize = 16f
             setTypeface(null, Typeface.BOLD)
             setTextColor(COLOR_TEXT_PRIMARY)
             background = createRoundedBackground(COLOR_PRIMARY, dp(12))
             elevation = dp(4).toFloat()
+            isEnabled = true
             setOnClickListener {
+                // Đặt vé nếu bấm trong thời gian
                 saveUserToDatabase(tenn, iEmail, formattedDate, title, lich, ghe, cinema, gia.toString())
                 dialog.dismiss()
             }
         }
 
-        val cancelBtn = Button(this).apply {
-            layoutParams = LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                dp(50)
-            )
-            text = "HỦY"
-            textSize = 16f
-            setTypeface(null, Typeface.BOLD)
-            setTextColor(COLOR_TEXT_SECONDARY)
-            background = createRoundedBackground(Color.parseColor("#2A2A2A"), dp(12))
-            elevation = dp(2).toFloat()
-            setOnClickListener {
-                dialog.dismiss()
-            }
-        }
-
-        layout.addView(title1)
-        layout.addView(confirmMessage)
+        layout.addView(titleView)
+        layout.addView(qrImageView)
+        layout.addView(countdownText)
         layout.addView(confirmBtn)
-        layout.addView(cancelBtn)
 
         dialog.setView(layout)
+        dialog.setCancelable(false)  // Không cho phép đóng dialog bằng cách khác
         dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
         dialog.show()
+
+        // Đếm ngược 30 giây
+        object : CountDownTimer(30000, 1000) {  // 30 giây, cập nhật mỗi 1 giây
+            override fun onTick(millisUntilFinished: Long) {
+                val secondsLeft = millisUntilFinished / 1000
+                countdownText.text = "Thời gian còn lại: $secondsLeft giây"
+            }
+
+            override fun onFinish() {
+                countdownText.text = "Thời gian đã hết!"
+                confirmBtn.isEnabled = false  // Vô hiệu hóa nút
+                confirmBtn.setTextColor(COLOR_TEXT_SECONDARY)
+                confirmBtn.background = createRoundedBackground(Color.parseColor("#2A2A2A"), dp(12))
+                Toast.makeText(this@ConfirmActivity, "Thời gian thanh toán đã hết. Đặt vé thất bại.", Toast.LENGTH_LONG).show()
+                dialog.dismiss()  // Đóng dialog sau 2 giây
+            }
+        }.start()
+    }
+
+    // Hàm tạo mã QR
+    private fun generateQRCode(data: String, width: Int, height: Int): Bitmap? {
+        val qrCodeWriter = QRCodeWriter()
+        return try {
+            val bitMatrix = qrCodeWriter.encode(data, BarcodeFormat.QR_CODE, width, height)
+            val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.RGB_565)
+            for (x in 0 until width) {
+                for (y in 0 until height) {
+                    bitmap.setPixel(x, y, if (bitMatrix[x, y]) Color.BLACK else Color.WHITE)
+                }
+            }
+            bitmap
+        } catch (e: WriterException) {
+            e.printStackTrace()
+            null
+        }
+    }
+
+    // Hàm tạo ID giao dịch ngẫu nhiên
+    private fun generateTransactionId(): String {
+        return UUID.randomUUID().toString().substring(0, 8).uppercase()
     }
 
     private fun saveUserToDatabase(ten: String, email: String, ngaydat: String, phim: String, lich: String, ghe: String, rap: String, gia: String) {

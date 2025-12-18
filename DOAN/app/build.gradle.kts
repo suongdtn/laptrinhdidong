@@ -47,7 +47,7 @@ android {
 dependencies {
     implementation("com.sun.mail:android-mail:1.6.6")
     implementation("com.sun.mail:android-activation:1.6.6")
-
+    implementation("com.google.zxing:core:3.5.1")
     implementation("com.google.code.gson:gson:2.10.1")
 
     // Glide — chỉ giữ 1 dòng

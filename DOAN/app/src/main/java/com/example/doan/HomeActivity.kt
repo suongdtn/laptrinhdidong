@@ -11,7 +11,6 @@ import android.os.Looper
 import android.view.Gravity
 import android.view.View
 import android.widget.*
-import androidx.appcompat.app.AppCompatActivity
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.constraintlayout.widget.ConstraintSet
 import androidx.core.content.ContextCompat
@@ -20,7 +19,7 @@ import com.bumptech.glide.Glide
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import com.google.firebase.firestore.FirebaseFirestore
 
-class HomeActivity : AppCompatActivity() {
+class HomeActivity : BaseActivity() {
 
     private lateinit var rootLayout: ConstraintLayout
     private lateinit var backgroundImage: ImageView
@@ -29,7 +28,6 @@ class HomeActivity : AppCompatActivity() {
     private lateinit var menuButton: ImageButton
     private lateinit var dimBackground: View
     private lateinit var menuLayout: LinearLayout
-    private lateinit var bottomNavigation: BottomNavigationView
 
     private lateinit var btnInfo: LinearLayout
     private lateinit var btnHistory: LinearLayout
@@ -58,25 +56,26 @@ class HomeActivity : AppCompatActivity() {
 
     companion object {
         private const val SELECT_PROVINCE_ACTIVITY = "com.example.doan.SelectProvinceActivity"
-        private const val FILM_ACTIVITY = "com.example.doan.FilmActivity"
-        private const val EVENT_ACTIVITY = "com.example.doan.EventActivity"
-        private const val PROMOTION_ACTIVITY = "com.example.doan.PromotionActivity"
         private const val USER_INFO_ACTIVITY = "com.example.doan.UserInfoActivity"
         private const val TICKET_ACTIVITY = "com.example.doan.TicketActivity"
     }
+
+    // ⭐ Trả về ID của nav_home vì đây là HomeActivity
+    override fun getNavigationMenuItemId(): Int = R.id.nav_home
 
     @SuppressLint("SetTextI18n")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         firestore = FirebaseFirestore.getInstance()
+
+        val email = intent.getStringExtra("userEmail")
+        userEmail = email
+
         buildUI()
-
-        val userEmail = intent.getStringExtra("userEmail")
-        setupListeners(userEmail)
-        fetchMovies(userEmail)
+        setupListeners(email)
+        fetchMovies(email)
     }
-
 
     private fun buildUI() {
         rootLayout = ConstraintLayout(this).apply {
@@ -85,22 +84,22 @@ class HomeActivity : AppCompatActivity() {
         }
         setContentView(rootLayout)
 
-        // BACKGROUND IMAGE - TĂNG ALPHA ĐỂ SÁNG HƠN ----------------------------------------------------
+        // BACKGROUND IMAGE
         backgroundImage = ImageView(this).apply {
             id = View.generateViewId()
             scaleType = ImageView.ScaleType.CENTER_CROP
-            alpha = 0.65f  // Tăng từ 0.35f lên 0.65f để sáng hơn nhiều
+            alpha = 0.65f
         }
         rootLayout.addView(backgroundImage)
 
-        // GRADIENT OVERLAY - GIẢM ĐỘ ĐẬM ĐỂ BACKGROUND SÁNG HƠN ---------------------------------------------------
+        // GRADIENT OVERLAY
         gradientOverlay = View(this).apply {
             id = View.generateViewId()
             background = createGradientOverlay()
         }
         rootLayout.addView(gradientOverlay)
 
-        // DIM BACKGROUND -----------------------------------------------------
+        // DIM BACKGROUND
         dimBackground = View(this).apply {
             id = View.generateViewId()
             setBackgroundColor(Color.parseColor("#CC000000"))
@@ -109,26 +108,23 @@ class HomeActivity : AppCompatActivity() {
         }
         rootLayout.addView(dimBackground)
 
-        // MENU BUTTON (hamburger) - --------------------------------------------
+        // MENU BUTTON
         menuButton = ImageButton(this).apply {
             id = View.generateViewId()
             setImageResource(R.drawable.baseline_dehaze_24)
             background = createMenuButtonBackground()
             elevation = dp(6).toFloat()
-            setColorFilter(Color.WHITE)  // Đổi icon thành màu trắng
-
-            // TĂNG VÙNG CHẠM
+            setColorFilter(Color.WHITE)
             setPadding(dp(12), dp(12), dp(12), dp(12))
             scaleType = ImageView.ScaleType.CENTER
         }
-
         rootLayout.addView(menuButton)
 
-        // MENU LAYOUT --------------------------------------------------------
+        // MENU LAYOUT
         menuLayout = buildSideMenu()
         rootLayout.addView(menuLayout)
 
-        // VIEWPAGER (film slider) - TĂNG KÍCH THƯỚC --------------------------------------------
+        // VIEWPAGER
         viewPager = ViewPager2(this).apply {
             id = View.generateViewId()
             clipToPadding = false
@@ -138,21 +134,14 @@ class HomeActivity : AppCompatActivity() {
         }
         rootLayout.addView(viewPager)
 
-        // BOTTOM NAVIGATION --------------------------------------------------
+        // BOTTOM NAVIGATION - ⭐ Sử dụng setupBottomNavigation từ BaseActivity
         bottomNavigation = BottomNavigationView(this).apply {
             id = View.generateViewId()
-            inflateMenu(R.menu.bottom_nav_menu)
-            background = createBottomNavBackground()
-            elevation = dp(12).toFloat()
-            itemIconTintList = ContextCompat.getColorStateList(this@HomeActivity, R.color.white)
-            itemTextColor = ContextCompat.getColorStateList(this@HomeActivity, R.color.white)
         }
         rootLayout.addView(bottomNavigation)
+        setupBottomNavigation(bottomNavigation, userEmail)
 
-        // APPLY CONSTRAINTS ---------------------------------------------------
         applyConstraints()
-
-
     }
 
     private fun buildSideMenu(): LinearLayout {
@@ -165,7 +154,6 @@ class HomeActivity : AppCompatActivity() {
             setPadding(dp(0), dp(25), dp(0), dp(25))
         }
 
-        // Header menu với gradient
         val menuHeader = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             background = GradientDrawable(
@@ -191,7 +179,6 @@ class HomeActivity : AppCompatActivity() {
         menuHeader.addView(menuTitle)
         layout.addView(menuHeader)
 
-        // Divider
         val divider = View(this).apply {
             setBackgroundColor(Color.parseColor("#2A2A2A"))
             layoutParams = LinearLayout.LayoutParams(
@@ -267,76 +254,51 @@ class HomeActivity : AppCompatActivity() {
         val set = ConstraintSet()
         set.clone(rootLayout)
 
-        // Background Image
         set.connect(backgroundImage.id, ConstraintSet.TOP, ConstraintSet.PARENT_ID, ConstraintSet.TOP)
         set.connect(backgroundImage.id, ConstraintSet.BOTTOM, ConstraintSet.PARENT_ID, ConstraintSet.BOTTOM)
         set.connect(backgroundImage.id, ConstraintSet.START, ConstraintSet.PARENT_ID, ConstraintSet.START)
         set.connect(backgroundImage.id, ConstraintSet.END, ConstraintSet.PARENT_ID, ConstraintSet.END)
 
-        // Gradient Overlay
         set.connect(gradientOverlay.id, ConstraintSet.TOP, ConstraintSet.PARENT_ID, ConstraintSet.TOP)
         set.connect(gradientOverlay.id, ConstraintSet.BOTTOM, ConstraintSet.PARENT_ID, ConstraintSet.BOTTOM)
         set.connect(gradientOverlay.id, ConstraintSet.START, ConstraintSet.PARENT_ID, ConstraintSet.START)
         set.connect(gradientOverlay.id, ConstraintSet.END, ConstraintSet.PARENT_ID, ConstraintSet.END)
 
-        // Dim Background
         set.connect(dimBackground.id, ConstraintSet.TOP, ConstraintSet.PARENT_ID, ConstraintSet.TOP)
         set.connect(dimBackground.id, ConstraintSet.BOTTOM, ConstraintSet.PARENT_ID, ConstraintSet.BOTTOM)
         set.connect(dimBackground.id, ConstraintSet.START, ConstraintSet.PARENT_ID, ConstraintSet.START)
         set.connect(dimBackground.id, ConstraintSet.END, ConstraintSet.PARENT_ID, ConstraintSet.END)
 
-        // Menu Button
         set.constrainWidth(menuButton.id, dp(52))
         set.constrainHeight(menuButton.id, dp(52))
+        set.connect(menuButton.id, ConstraintSet.TOP, ConstraintSet.PARENT_ID, ConstraintSet.TOP, dp(40))
+        set.connect(menuButton.id, ConstraintSet.START, ConstraintSet.PARENT_ID, ConstraintSet.START, dp(20))
 
-        set.connect(
-            menuButton.id,
-            ConstraintSet.TOP,
-            ConstraintSet.PARENT_ID,
-            ConstraintSet.TOP,
-            dp(40)
-        )
-
-        set.connect(
-            menuButton.id,
-            ConstraintSet.START,
-            ConstraintSet.PARENT_ID,
-            ConstraintSet.START,
-            dp(20)
-        )
-
-        // Menu Layout
         set.constrainWidth(menuLayout.id, dp(280))
         set.connect(menuLayout.id, ConstraintSet.TOP, ConstraintSet.PARENT_ID, ConstraintSet.TOP)
         set.connect(menuLayout.id, ConstraintSet.BOTTOM, ConstraintSet.PARENT_ID, ConstraintSet.BOTTOM)
         set.connect(menuLayout.id, ConstraintSet.START, ConstraintSet.PARENT_ID, ConstraintSet.START)
 
-        // ViewPager - Bây giờ nối trực tiếp từ top của parent
         set.constrainHeight(viewPager.id, dp(0))
         set.connect(viewPager.id, ConstraintSet.TOP, ConstraintSet.PARENT_ID, ConstraintSet.TOP, dp(12))
         set.connect(viewPager.id, ConstraintSet.BOTTOM, bottomNavigation.id, ConstraintSet.TOP, dp(8))
         set.connect(viewPager.id, ConstraintSet.START, ConstraintSet.PARENT_ID, ConstraintSet.START)
         set.connect(viewPager.id, ConstraintSet.END, ConstraintSet.PARENT_ID, ConstraintSet.END)
 
-        // Bottom Navigation
         set.connect(bottomNavigation.id, ConstraintSet.BOTTOM, ConstraintSet.PARENT_ID, ConstraintSet.BOTTOM)
         set.connect(bottomNavigation.id, ConstraintSet.START, ConstraintSet.PARENT_ID, ConstraintSet.START)
         set.connect(bottomNavigation.id, ConstraintSet.END, ConstraintSet.PARENT_ID, ConstraintSet.END)
-        set.constrainHeight(bottomNavigation.id, dp(70))
+        set.constrainHeight(bottomNavigation.id, dp(80))
 
         set.applyTo(rootLayout)
     }
-
-    // =====================================================================
-    //                       DRAWABLE HELPERS
-    // =====================================================================
 
     private fun createGradientOverlay(): GradientDrawable {
         return GradientDrawable(
             GradientDrawable.Orientation.TOP_BOTTOM,
             intArrayOf(
-                Color.parseColor("#40000000"),  // Giảm từ #80000000 xuống #40000000 (ít đen hơn)
-                Color.parseColor("#80000000")   // Giảm từ #CC000000 xuống #80000000 (ít đen hơn)
+                Color.parseColor("#40000000"),
+                Color.parseColor("#80000000")
             )
         )
     }
@@ -361,27 +323,6 @@ class HomeActivity : AppCompatActivity() {
         }
     }
 
-    private fun createBottomNavBackground(): GradientDrawable {
-        return GradientDrawable(
-            GradientDrawable.Orientation.LEFT_RIGHT,
-            intArrayOf(
-                Color.parseColor("#B00710"),
-                Color.parseColor("#E50914"),
-                Color.parseColor("#FF1F2A")
-            )
-        ).apply {
-            cornerRadii = floatArrayOf(dp(20).toFloat(), dp(20).toFloat(), dp(20).toFloat(), dp(20).toFloat(), 0f, 0f, 0f, 0f)
-        }
-    }
-
-    private fun dp(value: Int): Int {
-        return (value * resources.displayMetrics.density).toInt()
-    }
-
-    // =====================================================================
-    //
-    // =====================================================================
-
     private fun setupListeners(userEmail: String?) {
         menuButton.setOnClickListener { toggleMenu() }
         dimBackground.setOnClickListener { toggleMenu() }
@@ -404,32 +345,6 @@ class HomeActivity : AppCompatActivity() {
         btnLogout.setOnClickListener {
             showToast("Đăng xuất")
             finish()
-        }
-
-        bottomNavigation.setOnItemSelectedListener { item ->
-            when (item.itemId) {
-                R.id.nav_phim -> {
-                    showToast("Phim")
-                    start(FILM_ACTIVITY, userEmail)
-                    true
-                }
-                R.id.nav_mua_ve -> {
-                    showToast("Sự kiện")
-                    start(EVENT_ACTIVITY)
-                    true
-                }
-                R.id.nav_rap -> {
-                    showToast("Rạp")
-                    start(SELECT_PROVINCE_ACTIVITY, userEmail)
-                    true
-                }
-                R.id.nav_khuyen_mai -> {
-                    showToast("Khuyến mãi")
-                    start(PROMOTION_ACTIVITY)
-                    true
-                }
-                else -> false
-            }
         }
     }
 
@@ -465,7 +380,6 @@ class HomeActivity : AppCompatActivity() {
 
                     viewPager.adapter = adapter
 
-                    // QUAN TRỌNG: Force ViewPager2 và RecyclerView bên trong để mỗi item full width
                     viewPager.post {
                         viewPager.getChildAt(0)?.let { recyclerView ->
                             recyclerView.setPadding(0, 0, 0, 0)
@@ -478,7 +392,6 @@ class HomeActivity : AppCompatActivity() {
 
                     Glide.with(this).load(adapter.getImageResource(0)).into(backgroundImage)
 
-                    // Lắng nghe khi chuyển trang để đổi background
                     viewPager.registerOnPageChangeCallback(object : ViewPager2.OnPageChangeCallback() {
                         override fun onPageSelected(position: Int) {
                             super.onPageSelected(position)
@@ -507,9 +420,6 @@ class HomeActivity : AppCompatActivity() {
             else R.drawable.baseline_dehaze_24
         )
     }
-
-    private fun showToast(msg: String) =
-        Toast.makeText(this, msg, Toast.LENGTH_SHORT).show()
 
     override fun onDestroy() {
         super.onDestroy()

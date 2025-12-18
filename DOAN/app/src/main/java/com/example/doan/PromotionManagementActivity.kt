@@ -19,11 +19,11 @@ class PromotionManagementActivity : AppCompatActivity() {
     private lateinit var promotionAdapter: PromotionadminAdapter
     private val promotionList = mutableListOf<Promotion>()
     private lateinit var database: CollectionReference
-
     private lateinit var edtPromotionTitle: EditText
     private lateinit var edtPromotionDate: EditText
     private lateinit var edtPromotionLocation: EditText
     private lateinit var edtPromotionImage: EditText
+    private lateinit var edtPromotionContent: EditText // ✅ THÊM MỚI
     private lateinit var btnUpdate: Button
     private lateinit var btnCancel: Button
 
@@ -37,7 +37,6 @@ class PromotionManagementActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // Tạo giao diện bằng Kotlin
         val mainLayout = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setBackgroundColor(Color.parseColor("#1a1a1a"))
@@ -113,6 +112,10 @@ class PromotionManagementActivity : AppCompatActivity() {
 
         edtPromotionImage = createEditText("🖼 URL hình ảnh")
         contentLayout.addView(edtPromotionImage)
+
+        // ✅ THÊM TRƯỜNG NỘI DUNG
+        edtPromotionContent = createMultilineEditText("📝 Nội dung chi tiết khuyến mãi")
+        contentLayout.addView(edtPromotionContent)
 
         // LAYOUT CHO 2 NÚT
         val buttonLayout = LinearLayout(this).apply {
@@ -225,13 +228,36 @@ class PromotionManagementActivity : AppCompatActivity() {
         }
     }
 
+    // ✅ THÊM HÀM TẠO EDITTEXT MULTILINE
+    private fun createMultilineEditText(hint: String): EditText {
+        return EditText(this).apply {
+            this.hint = hint
+            setHintTextColor(Color.parseColor("#666666"))
+            setTextColor(Color.WHITE)
+            setBackgroundColor(Color.parseColor("#2a2a2a"))
+            setPadding(36, 36, 36, 36)
+            textSize = 16f
+            minLines = 5
+            maxLines = 10
+            gravity = Gravity.TOP or Gravity.START
+            inputType = android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_FLAG_MULTI_LINE
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply {
+                setMargins(0, 0, 0, 36)
+            }
+        }
+    }
+
     private fun addPromotion() {
         val title = edtPromotionTitle.text.toString().trim()
         val date = edtPromotionDate.text.toString().trim()
         val location = edtPromotionLocation.text.toString().trim()
         val image = edtPromotionImage.text.toString().trim()
+        val content = edtPromotionContent.text.toString().trim() // ✅ THÊM MỚI
 
-        Log.d(TAG, "addPromotion - Title: $title, Date: $date, Location: $location")
+        Log.d(TAG, "addPromotion - Title: $title, Date: $date, Location: $location, Content: $content")
 
         if (title.isEmpty() || date.isEmpty() || location.isEmpty()) {
             Toast.makeText(this, "Vui lòng nhập đầy đủ thông tin!", Toast.LENGTH_SHORT).show()
@@ -239,15 +265,16 @@ class PromotionManagementActivity : AppCompatActivity() {
             return
         }
 
-        savePromotionToDatabase(title, date, location, image)
+        savePromotionToDatabase(title, date, location, image, content) // ✅ THÊM THAM SỐ
     }
 
-    private fun savePromotionToDatabase(title: String, days: String, location: String, image: String) {
+    private fun savePromotionToDatabase(title: String, days: String, location: String, image: String, content: String) {
         val promotionData = hashMapOf(
             "title" to title,
             "days" to days,
             "location" to location,
-            "image" to image
+            "image" to image,
+            "content" to content // ✅ THÊM MỚI
         )
 
         Log.d(TAG, "Saving to Firestore: $promotionData")
@@ -283,8 +310,9 @@ class PromotionManagementActivity : AppCompatActivity() {
                     val days = doc.getString("days") ?: ""
                     val location = doc.getString("location") ?: ""
                     val image = doc.getString("image") ?: ""
+                    val content = doc.getString("content") ?: "" // ✅ THÊM MỚI
 
-                    val promotion = Promotion(title, days, image, location, doc.id)
+                    val promotion = Promotion(title, days, image, location, doc.id, content) // ✅ THÊM THAM SỐ
                     promotionList.add(promotion)
                     Log.d(TAG, "Loaded: $title")
                 }
@@ -304,6 +332,7 @@ class PromotionManagementActivity : AppCompatActivity() {
         edtPromotionDate.setText(promotion.date)
         edtPromotionLocation.setText(promotion.location)
         edtPromotionImage.setText(promotion.imageUrl)
+        edtPromotionContent.setText(promotion.content) // ✅ THÊM MỚI
 
         btnUpdate.text = "✏️ CẬP NHẬT"
         btnUpdate.setBackgroundColor(Color.parseColor("#1976D2"))
@@ -317,6 +346,7 @@ class PromotionManagementActivity : AppCompatActivity() {
         val date = edtPromotionDate.text.toString().trim()
         val location = edtPromotionLocation.text.toString().trim()
         val image = edtPromotionImage.text.toString().trim()
+        val content = edtPromotionContent.text.toString().trim() // ✅ THÊM MỚI
 
         if (title.isEmpty() || date.isEmpty() || location.isEmpty()) {
             Toast.makeText(this, "Vui lòng nhập đầy đủ thông tin!", Toast.LENGTH_SHORT).show()
@@ -332,7 +362,8 @@ class PromotionManagementActivity : AppCompatActivity() {
             "title" to title,
             "days" to date,
             "location" to location,
-            "image" to image
+            "image" to image,
+            "content" to content // ✅ THÊM MỚI
         )
 
         Log.d(TAG, "Updating document: $editingPromotionId")
@@ -380,6 +411,7 @@ class PromotionManagementActivity : AppCompatActivity() {
         edtPromotionDate.setText("")
         edtPromotionLocation.setText("")
         edtPromotionImage.setText("")
+        edtPromotionContent.setText("") // ✅ THÊM MỚI
     }
 
     private fun resetEditMode() {
@@ -390,10 +422,3 @@ class PromotionManagementActivity : AppCompatActivity() {
         Log.d(TAG, "Edit mode disabled")
     }
 }
-
-data class PromotionAdmin(
-    val title: String = "",
-    val days: String = "",
-    val location: String = "",
-    val image: String = ""
-)
